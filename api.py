@@ -8,7 +8,7 @@ from app.user.controller import api as user_api
 from app.user.controller import auth_api
 from app.moment.controller import moment_api
 from flask_mongoengine import MongoEngine
-
+from flask_cors import CORS
 from config import Config
 
 import json
@@ -39,6 +39,9 @@ api = Api(app)
 api.add_namespace(user_api)
 api.add_namespace(auth_api)
 api.add_namespace(moment_api)
+
+# CORS
+CORS(app)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0",port=3002,debug=True)

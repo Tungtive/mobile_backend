@@ -13,7 +13,7 @@ from flask import jsonify, request
 # from aliyunsdkdysmsapi.request.v20170525.SendSmsRequest import SendSmsRequest
 
 from .model import User
-
+from ..utils import upload_file_to_s3,generate_s3_singed_url
 api = Namespace('user',description="users related api")
 
 
@@ -58,9 +58,97 @@ class  GetUserByUserNameApi(Resource):
     def post(self):
         data =  request.json
         user1 = User.objects(username = data['username1']).first_or_404()
-        user1.friends.append(data['username2'])
+        user2 = User.objects(username = data['username2']).first_or_404()
+        user1.friends.append(user2)
         user1.save()
         return {"user":user1.to_dict()}
+    
+@api.route("/deleteFriend")
+class  GetUserByUserNameApi(Resource):
+    def post(self):
+        data =  request.json
+        user1 = User.objects(username = data['username1']).first_or_404()
+        user2 = User.objects(username = data['username2']).first_or_404()
+        user1.friends.remove(user2)
+        user1.save()
+        return {"user":user1.to_dict()}
+
+@api.route("/setSign")
+class UsersetSign(Resource):
+    def post(self):
+        data = request.json
+        user = User.objects(username = data['username']).first_or_404()
+        user.sign = data["sign"]
+        user.save()
+        return {"user":user.to_dict()}
+
+    
+@api.route("/upLoadAvatar")
+class userUploadAvatar(Resource):
+    def post(self):
+        print("1111111111")
+        uploaded_file = request.files.get("file")
+        username =  request.files.get("username")
+        if uploaded_file is None:
+            return {"message": "No file uploaded"}, 400
+
+
+        username = request.form.get("username")
+        user = User.objects(username = username).first_or_404()
+        # Upload logic
+    
+        user.avatar_url = upload_file_to_s3(
+            uploaded_file, f"users/avatars"
+        )
+        user.save()
+
+        return {"username":user.username,"avatar_url":generate_s3_singed_url(user.avatar_url)}, 201
+
+@api.route("/upLoadAlbum")
+class userUploadAlbum(Resource):
+    def post(self):
+        uploaded_file = request.files.get("file")
+        username =  request.files.get("username")
+        if uploaded_file is None:
+            return {"message": "No file uploaded"}, 400
+        username = request.form.get("username")
+        user = User.objects(username = username).first_or_404()
+        # Upload logic
+    
+        img_url = upload_file_to_s3(
+            uploaded_file, f"users/albums"
+        )
+        user.album.append(img_url)
+
+        user.save()
+
+        return {"upload":"sucess"}, 201
+
+@api.route("/deleteUserAlbum")
+class userUploadAlbum(Resource):
+    def post(self):
+        
+        data = request.json
+        username = data["username"]
+        index = data["index"]
+        user = User.objects(username = username).first_or_404()
+        # Upload logic
+        del user.album[int(index)]
+        user.save()
+
+        return {"delete":"sucess"}, 201
+
+@api.route("/getUserAlbum")
+class userUploadAlbum(Resource):
+    def post(self):
+        data = request.json
+        user = User.objects(username = data['username']).first_or_404()
+        imgUrlList = []
+        for img_url in user.album:
+            imgUrlList.append(generate_s3_singed_url(img_url))
+
+
+        return {"username":user.username,"album":imgUrlList}, 201
 
 
 @api.route("/register")
@@ -72,14 +160,18 @@ class  UserRegisterApi(Resource):
         for user1 in User.objects():
             if (user1.to_dict()['username']==username ): 
                 return {"error":"username already exist!"},401
+        
         user.username = username
+        user.userID = str(len(User.objects())+1).zfill(7);
         user.password = data['password']
         user.phone_number = data['phone_number']
         user.email = data['email']
         user.gender = data['gender']
         user.status = data['status']
-        user.age = data["age"]
+        user.birth = data["birth"]
         user.university = data["university"]
+        user.height = data["height"]
+        user.sign =data["sign"]
         user.save()
         return {"user":user.to_dict(),"register":"ok"},201
 # @api.route("/<user_id>")

@@ -3,7 +3,7 @@ from typing import Dict
 from datetime import datetime
 from ..user.model import User
 from mongoengine.fields import (
-    StringField,DateField,ReferenceField
+    StringField,DateField,ReferenceField,ListField
 )
 
 class Moment(Document):
@@ -11,7 +11,7 @@ class Moment(Document):
     user = ReferenceField('User')
     dateTime = DateField(default=datetime.now)
     context = StringField()
-    
+    imgUrl = StringField()
 
 
     def to_dict(self):
@@ -24,6 +24,6 @@ class Moment(Document):
                "unversity":self.user.university
             },
             "datetime" : self.dateTime.isoformat(),
-            "context":self.context
-
+            "context":self.context,
+            "imgUrl": self.imgUrl
         }

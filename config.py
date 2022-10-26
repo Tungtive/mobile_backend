@@ -13,6 +13,7 @@ class Config(Config):
     MONGODB_PASSWORD : str = os.getenv("MONGODB_PASSWORD","root")
     MONGODB_HOST : str = os.getenv("MONGODB_HOST","localhost")
     MONGODB_PORT : Literal[27017] = 27017
+    AWS_BUCKET_NAME = "comp90018mobile"
 
 # class Config(Config):
 #     enable_utc = True

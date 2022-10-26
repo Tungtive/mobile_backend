@@ -6,6 +6,8 @@ from mongoengine.fields import (
     StringField,ListField,ReferenceField
 )
 
+from ..utils import generate_s3_singed_url
+
 # import bcrypt
 # import base64
 # import hashlib
@@ -27,29 +29,47 @@ from mongoengine.fields import (
 class User(Document):
 
     username = StringField(required=True, unique=True, max_length=36)
+    userID = StringField()
     password = StringField(required=True)
     phone_number = StringField()
     email  = StringField()
     gender = StringField()
-    age = StringField()
+    birth = StringField()
+    height = StringField()
     status = StringField()
     university = StringField()
-    friends =  ListField(StringField())
+    sign = StringField()
+    friends =  ListField(ReferenceField('User'))
     moments =  ListField(StringField())
+    avatar_url = StringField()
+    album = ListField(StringField())
 
 
     def to_dict(self):
         return  {
             "id" :str(self.id),
+            "userID": self.userID,
             "username":self.username,
             "password":self.password,
             "phone_number":self.phone_number,
             "gender":self.gender,
-            "age":self.age,
+            "birth":self.birth,
             "status":self.status,
             "email":self.email,
             "university":self.university,
-            "friends": self.friends,
+            "sign":self.sign,
+            "friends": [friend.to_dict_friends() for friend in self.friends],
+            "height": self.height,
+            "avatar_url":self.avatar_url,
+            "album" : self.album
+
+        }
+    def to_dict_friends(self):
+        return {
+            "username":self.username,
+            "gender":self.gender,
+            "university":self.university,
+            "birth":self.birth
         }
 
 
