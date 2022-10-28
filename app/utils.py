@@ -1,8 +1,7 @@
 from werkzeug.utils import secure_filename
 import boto3
 from flask import current_app
-
-
+import random
 
 s3 = boto3.client("s3")
 
@@ -25,3 +24,16 @@ def generate_s3_singed_url(object_name):
         Params={"Bucket": current_app.config["AWS_BUCKET_NAME"], "Key": object_name},
         ExpiresIn=3600,
     )
+
+def generate_randomCode():
+ 
+    checkcode = ""
+ 
+    for i in range(6):
+        current = random.randrange(0,9,2)
+        if current != i:
+            temp = chr(random.randint(65,90))
+        else:
+            temp = random.randint(0,9)
+        checkcode += str(temp)
+    return checkcode

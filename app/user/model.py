@@ -43,6 +43,8 @@ class User(Document):
     moments =  ListField(StringField())
     avatar_url = StringField()
     album = ListField(StringField())
+    faculty = StringField()
+    major = StringField()
 
 
     def to_dict(self):
@@ -61,15 +63,21 @@ class User(Document):
             "friends": [friend.to_dict_friends() for friend in self.friends],
             "height": self.height,
             "avatar_url":self.avatar_url,
-            "album" : self.album
+            "album" : self.album,
+            "faculty":self.faculty,
+            "major":self.major
+
 
         }
     def to_dict_friends(self):
+
         return {
             "username":self.username,
             "gender":self.gender,
             "university":self.university,
-            "birth":self.birth
+            "birth":self.birth,
+            "sign":self.sign,
+            "avatar_url": self.avatar_url
         }
 
 

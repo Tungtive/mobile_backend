@@ -1,19 +1,18 @@
 import datetime
+from inspect import modulesbyfile
 import json
 from sys import stdout
+from unittest import result
 from xml.dom import UserDataHandler
 from flask_restx import Namespace, Resource
 from flask import jsonify, request
 
-# from aliyunsdkcore.client import AcsClient
-# from aliyunsdkcore.acs_exception.exceptions import ClientException
-# from aliyunsdkcore.acs_exception.exceptions import ServerException
-# from aliyunsdkcore.auth.credentials import AccessKeyCredential
-# from aliyunsdkcore.auth.credentials import StsTokenCredential
-# from aliyunsdkdysmsapi.request.v20170525.SendSmsRequest import SendSmsRequest
+from uuid import uuid4
+import requests
+import ssl
 
 from .model import User
-from ..utils import upload_file_to_s3,generate_s3_singed_url
+from ..utils import upload_file_to_s3,generate_s3_singed_url,generate_randomCode
 api = Namespace('user',description="users related api")
 
 
@@ -43,6 +42,43 @@ class  GetUserByUserNameApi(Resource):
         data =  request.json
         user = User.objects(username = data['username']).first_or_404()
         return {"user":user.to_dict()}
+    
+@api.route("/getUserByFilter")
+class  GetUserByUserNameApi(Resource):
+    def post(self):
+        data =  request.json
+        gender = data["gender"]
+        status = data["status"]
+        university = data["university"]
+        age = data['age']
+        if age!='':
+            minAge = int(data["age"].split("-")[0])
+            maxAge = int(data["age"].split("-")[1])
+
+        today = datetime.datetime.today()
+        year = int(today.year)
+        month = int(today.month)
+        day = int(today.day)
+        results = []
+        for user in User.objects():
+            print(user.birth.split('/'))
+            print(user.gender)
+            print(user.status)
+            print(user.university)
+            if ((user.gender == gender) or gender=='') and ((user.status == status) or status =='')and ((user.university == university) or university == ''):
+                if (age!=''):
+                    gap = 0
+                    print(user.birth.split('/'))
+                    if (int(user.birth.split('/')[1])>month):
+                        gap = -1     
+                    if (int(user.birth.split('/')[1])==month) and (int(user.birth.split('/'))> day):
+                        gap = -1
+                    userYear = int(user.birth.split('/')[0])
+                    age = year - userYear +gap 
+                    if (age<=maxAge) and (age>=minAge):
+                        results.append(user)
+                else : results.append(user)
+        return [re.to_dict() for re in results]
     
 @api.route("/getUserFriends")
 class  GetUserByUserNameApi(Resource):
@@ -86,9 +122,8 @@ class UsersetSign(Resource):
 @api.route("/upLoadAvatar")
 class userUploadAvatar(Resource):
     def post(self):
-        print("1111111111")
         uploaded_file = request.files.get("file")
-        username =  request.files.get("username")
+
         if uploaded_file is None:
             return {"message": "No file uploaded"}, 400
 
@@ -103,6 +138,15 @@ class userUploadAvatar(Resource):
         user.save()
 
         return {"username":user.username,"avatar_url":generate_s3_singed_url(user.avatar_url)}, 201
+
+@api.route("/getUserAvatar")
+class getUserAvatar(Resource):
+    def post(self):
+        username = request.json.get("username")
+        user = User.objects(username = username).first_or_404()
+        return {"username":username,"avatar_url":generate_s3_singed_url(user.avatar_url)},201
+    
+
 
 @api.route("/upLoadAlbum")
 class userUploadAlbum(Resource):
@@ -172,6 +216,9 @@ class  UserRegisterApi(Resource):
         user.university = data["university"]
         user.height = data["height"]
         user.sign =data["sign"]
+        user.faculty = data["faculty"]
+        user.major = data["major"]
+        user.avatar_url = "users/avatars/test.jpeg"
         user.save()
         return {"user":user.to_dict(),"register":"ok"},201
 # @api.route("/<user_id>")
@@ -215,10 +262,12 @@ class  UserRegisterApi(Resource):
             user.status = data['status']
         user.save()
         return {"user":user.to_dict(),"update user status":"ok"},201   
+    
+
 
 auth_api = Namespace("auth")
 
-@auth_api.route("/login")
+@auth_api.route("/loginByPwd")
 class Login(Resource):
     def post(self):
         username = request.json.get("username")
@@ -237,25 +286,38 @@ class Login(Resource):
         # )
         return {"user": user.to_dict(),"login":"ok"}, 201
 
-# @auth_api.route("/sms")
-# class Sms(Resource):
-#     def  post(self):
-#         credentials = AccessKeyCredential('LTAI5tL1cxdWQgPoKqqFxd4D', 'h9UmT6yt5NTkBnajaweAtpyblPI3MM')
-#         # use STS Token
-#         # credentials = StsTokenCredential('<your-access-key-id>', '<your-access-key-secret>', '<your-sts-token>')
-#         client = AcsClient(region_id='cn-hangzhou', credential=credentials)
-#         phoneNum = request.json.get("phoneNumber")
-#         smsRequest = SendSmsRequest()
-#         smsRequest.set_accept_format('json')
+    
 
-#         smsRequest.set_SignName("阿里云短信测试")
-#         smsRequest.set_TemplateCode("SMS_154950909")
-#         smsRequest.set_PhoneNumbers(phoneNum)
-#         smsRequest.set_TemplateParam("{\"code\":\"1234\"}")
+    
 
-#         smsResponse = client.do_action_with_exception(smsRequest)
-#         # print(phoneNum)
-#         code = json.loads(smsResponse.decode('utf8'))["Code"]
-#         print(json.loads(smsResponse.decode('utf8'))["Code"])
-        
-#         return {"status":code}
+@auth_api.route("/loginBySms")
+class loginBySms(Resource):
+    def post(self):
+        user = User.objects(phone_number=request.json.get('phone_num')).first_or_404(message="User not found")
+        return {"user":user.to_dict(),"login":"ok"},201
+    
+
+@auth_api.route("/sendSms")
+class sendSms(Resource):
+    def post(self):
+       
+        phone_num = request.json.get('phone_num')
+        host = 'https://miitangs09.market.alicloudapi.com'
+        path = '/v1/tools/sms/code/sender'
+        appcode = '25bdd1fc64094f0091b2a63bafbd0eaa'
+        url = host + path
+
+        payload = {'phoneNumber': phone_num,
+                'smsSignId': '0000'}
+
+        headers = {
+            'Authorization': 'APPCODE ' + appcode,
+            'X-Ca-Nonce': str(uuid4())
+        }
+
+        response = requests.request("POST", url, headers=headers, data=payload)
+        # print(response.headers)
+        # print(response.status_code)
+        print(response.text)
+        return {"response":json.loads(response.text)}
+                

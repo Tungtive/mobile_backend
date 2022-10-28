@@ -31,7 +31,9 @@ class  AddMomentApi(Resource):
         moment.imgUrl = ''
         moment.save()
         return {"moment":moment.to_dict(),"addMoment":"ok"},201
-    
+
+
+
 @moment_api.route("/addMomentWithImg")
 class  AddMomentApi(Resource):
     def post(self):
