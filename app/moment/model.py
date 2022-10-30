@@ -11,7 +11,7 @@ class Moment(Document):
     user = ReferenceField('User')
     dateTime = DateField(default=datetime.now)
     context = StringField()
-    imgUrl = StringField()
+    imgUrl = ListField(StringField())
 
 
     def to_dict(self):
@@ -21,7 +21,8 @@ class Moment(Document):
                "username": self.user.username,
                "gender":self.user.gender,
                "age":self.user.gender,
-               "unversity":self.user.university
+               "unversity":self.user.university,
+               "avatar_url":self.user.avatar_url
             },
             "datetime" : self.dateTime.isoformat(),
             "context":self.context,

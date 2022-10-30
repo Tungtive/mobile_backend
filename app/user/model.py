@@ -3,10 +3,10 @@ from typing import Dict
 from flask_mongoengine import Document
 
 from mongoengine.fields import (
-    StringField,ListField,ReferenceField
+    StringField,ListField,ReferenceField,FloatField
 )
 
-from ..utils import generate_s3_singed_url
+from ..utils import generate_s3_singed_url,compute_distance
 
 # import bcrypt
 # import base64
@@ -45,8 +45,8 @@ class User(Document):
     album = ListField(StringField())
     faculty = StringField()
     major = StringField()
-
-
+    quiz  = ListField(StringField())
+    loc = ListField(FloatField())
     def to_dict(self):
         return  {
             "id" :str(self.id),
@@ -60,16 +60,17 @@ class User(Document):
             "email":self.email,
             "university":self.university,
             "sign":self.sign,
-            "friends": [friend.to_dict_friends() for friend in self.friends],
+            "friends": [friend.to_dict_friends(self.loc) for friend in self.friends],
             "height": self.height,
             "avatar_url":self.avatar_url,
             "album" : self.album,
             "faculty":self.faculty,
-            "major":self.major
-
+            "major":self.major,
+            "quiz":self.quiz,
+            "loc":self.loc
 
         }
-    def to_dict_friends(self):
+    def to_dict_friends(self,loc):
 
         return {
             "username":self.username,
@@ -77,7 +78,8 @@ class User(Document):
             "university":self.university,
             "birth":self.birth,
             "sign":self.sign,
-            "avatar_url": self.avatar_url
+            "avatar_url": self.avatar_url,
+            "distance": str(compute_distance(self.loc,loc))
         }
 
 

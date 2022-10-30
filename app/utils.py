@@ -2,6 +2,7 @@ from werkzeug.utils import secure_filename
 import boto3
 from flask import current_app
 import random
+from geopy.distance import geodesic
 
 s3 = boto3.client("s3")
 
@@ -37,3 +38,10 @@ def generate_randomCode():
             temp = random.randint(0,9)
         checkcode += str(temp)
     return checkcode
+
+def compute_distance(loc1,loc2):
+    x1 = loc1[0]
+    y1 = loc1[1]
+    x2 = loc2[0]
+    y2 = loc2[1]
+    return geodesic((x1,y1),(x2,y2)).km

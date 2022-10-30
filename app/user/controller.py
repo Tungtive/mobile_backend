@@ -12,7 +12,7 @@ import requests
 import ssl
 
 from .model import User
-from ..utils import upload_file_to_s3,generate_s3_singed_url,generate_randomCode
+from ..utils import upload_file_to_s3,generate_s3_singed_url,compute_distance
 api = Namespace('user',description="users related api")
 
 
@@ -85,8 +85,13 @@ class  GetUserByUserNameApi(Resource):
     def post(self):
         data =  request.json
         user = User.objects(username = data['username']).first_or_404()
+        friends = user.friends
+        result = []
+        for friend in friends:
+            friend["avatar_url"] = generate_s3_singed_url(friend["avatar_url"])
+            result.append(friend)
 
-        return {"friends":user.to_dict()["friends"]}
+        return {"friends":[friend.to_dict_friends(user.loc) for friend in result]}
 
     
 @api.route("/addFriend")
@@ -95,6 +100,9 @@ class  GetUserByUserNameApi(Resource):
         data =  request.json
         user1 = User.objects(username = data['username1']).first_or_404()
         user2 = User.objects(username = data['username2']).first_or_404()
+        for friend in user1.friends:
+            if friend['username'] == user2.username:
+                return {"message": user2.username+" already exist"}
         user1.friends.append(user2)
         user1.save()
         return {"user":user1.to_dict()}
@@ -219,6 +227,8 @@ class  UserRegisterApi(Resource):
         user.faculty = data["faculty"]
         user.major = data["major"]
         user.avatar_url = "users/avatars/test.jpeg"
+        user.quiz = data['quiz']
+        user.loc = [-37.7983,144.9610]
         user.save()
         return {"user":user.to_dict(),"register":"ok"},201
 # @api.route("/<user_id>")
@@ -230,6 +240,41 @@ class  UserRegisterApi(Resource):
 #         # return "null", 404
 #         return User.objects(id=user_id).first_or_404(message="User not found").to_dict()
 
+@api.route("/updateUserLoc")
+class UpdateUserLoc(Resource):
+    def post(self):
+        data = request.json
+        username = data['username']
+        loc = [float(i) for i in data['loc']]
+        user = User.objects(username=username).first_or_404(message="User not found")
+        user.loc = loc
+        user.save()
+        return {"x":str(user.loc[0]),"y":str(user.loc[1])}
+
+
+@api.route("/updateUserQuiz")
+class UpdateUserQuiz(Resource):  
+    def post(self):
+        data = request.json
+        username = data['username']
+
+        user = User.objects(username=username).first_or_404(message="User not found")
+        user.quiz = data['quiz']
+        user.save()
+        return {"username":username,"quiz":user.quiz}
+
+
+@api.route("/getDistance")
+class getDistance(Resource):
+    def post(self):
+        data = request.json
+        username1 = data['username1']
+        username2 = data['username2']
+       
+        user1 = User.objects(username=username1).first_or_404(message="User not found")
+        user2 = User.objects(username=username2).first_or_404(message="User not found")
+        
+        return {"distance":str(compute_distance(user1.loc,user2.loc))}
 
 @api.route("/updateUserInfo")
 class  UserRegisterApi(Resource):
