@@ -210,28 +210,28 @@ class userUploadAlbum(Resource):
 @api.route("/register")
 class  UserRegisterApi(Resource):
     def post(self):
-        data =  request.json
+        data =  request.form
         user = User()
-        username  = data['username']
+        username  = data.get('username')
         for user1 in User.objects():
             if (user1.to_dict()['username']==username ): 
                 return {"error":"username already exist!"},401
         
         user.username = username
         user.userID = str(len(User.objects())+1).zfill(7);
-        user.password = data['password']
-        user.phone_number = data['phone_number']
-        user.email = data['email']
-        user.gender = data['gender']
-        user.status = data['status']
-        user.birth = data["birth"]
-        user.university = data["university"]
-        user.height = data["height"]
-        user.sign =data["sign"]
-        user.faculty = data["faculty"]
-        user.major = data["major"]
+        user.password = data.get('password')
+        user.phone_number = data.get('phone_number')
+        user.email = data.get('email')
+        user.gender = data.get('gender')
+        user.status = data.get('status')
+        user.birth = data.get("birth")
+        user.university = data.get("university")
+        user.height = data.get("height")
+        user.sign =data.get("sign")
+        user.faculty = data.get("faculty")
+        user.major = data.get("major")
         user.avatar_url = "users/avatars/test.jpeg"
-        user.quiz = data['quiz']
+        user.quiz = data.getlist('quiz')
         user.loc = [-37.7983,144.9610]
         user.save()
         return {"user":user.to_dict(),"register":"ok"},201
