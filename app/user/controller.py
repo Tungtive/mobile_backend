@@ -82,7 +82,7 @@ class  GetUserByUserNameApi(Resource):
                 else : 
                     user.avatar_url =  generate_s3_singed_url(user.avatar_url)
                     results.append(user)
-        return [re.to_dict() for re in results]
+        return {"results":[re.to_dict() for re in results]}
     
 @api.route("/getUserFriends")
 class  GetUserByUserNameApi(Resource):
@@ -294,7 +294,7 @@ class getUserByDistance(Resource):
                 if dis <= float(distance):
                     user1.avatar_url =  generate_s3_singed_url(user1.avatar_url)
                     result.append(user1)
-        return [re.to_dict() for re in result]
+        return {"results":[re.to_dict() for re in result]}
 
 
 @api.route("/updateUserInfo")
