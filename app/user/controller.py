@@ -2,6 +2,7 @@ import datetime
 from inspect import modulesbyfile
 import json
 from sys import stdout
+from turtle import distance
 from unittest import result
 from xml.dom import UserDataHandler
 from flask_restx import Namespace, Resource
@@ -275,6 +276,22 @@ class getDistance(Resource):
         user2 = User.objects(username=username2).first_or_404(message="User not found")
         
         return {"distance":str(compute_distance(user1.loc,user2.loc))}
+    
+@api.route("/getUserByDistance")
+class getUserByDistance(Resource):
+    def post(self):
+        data = request.json
+        username = data['username']
+        distance = data['distance']
+        user = User.objects(username=username).first_or_404(message="User not found")
+        result = []
+        for user1 in User.objects():
+            if (user1.to_dict()['username'] != username):
+                dis = compute_distance(user.loc,user1.loc)
+                if dis <= float(distance):
+                    result.append(user1)
+        return [re.to_dict() for re in result]
+
 
 @api.route("/updateUserInfo")
 class  UserRegisterApi(Resource):
