@@ -77,8 +77,11 @@ class  GetUserByUserNameApi(Resource):
                     userYear = int(user.birth.split('/')[0])
                     age = year - userYear +gap 
                     if (age<=maxAge) and (age>=minAge):
+                        user.avatar_url =  generate_s3_singed_url(user.avatar_url)
                         results.append(user)
-                else : results.append(user)
+                else : 
+                    user.avatar_url =  generate_s3_singed_url(user.avatar_url)
+                    results.append(user)
         return [re.to_dict() for re in results]
     
 @api.route("/getUserFriends")
@@ -289,6 +292,7 @@ class getUserByDistance(Resource):
             if (user1.to_dict()['username'] != username):
                 dis = compute_distance(user.loc,user1.loc)
                 if dis <= float(distance):
+                    user1.avatar_url =  generate_s3_singed_url(user1.avatar_url)
                     result.append(user1)
         return [re.to_dict() for re in result]
 
